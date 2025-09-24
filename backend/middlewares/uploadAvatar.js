@@ -1,7 +1,11 @@
-const multer = require("multer");
-const path = require("path");
-const AppError = require("../utils/appError");
-const fs = require("fs");
+// const multer = require("multer");
+// const path = require("path");
+// const AppError = require("../utils/appError");
+// const fs = require("fs");
+import multer from "multer";
+import path from "path";
+import AppError from "../utils/appError.js";
+import fs from "fs";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -23,4 +27,4 @@ const fileFilter = (req, file, cb) => {
 
 const uploadAvatar = multer({ storage, fileFilter });
 
-module.exports = uploadAvatar;
+export default uploadAvatar;

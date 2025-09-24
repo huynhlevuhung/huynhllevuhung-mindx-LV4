@@ -1,6 +1,9 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const validator = require("validator");
+// const mongoose = require("mongoose");
+// const bcrypt = require("bcrypt");
+// const validator = require("validator");
+import mongoose from "mongoose";
+import validator from "validator";
+import bcrypt from "bcrypt";
 
 const tempUserSchema = new mongoose.Schema(
   {
@@ -63,4 +66,4 @@ const tempUserSchema = new mongoose.Schema(
 // });
 
 const TempUser = mongoose.model("TempUser", tempUserSchema);
-module.exports = TempUser;
+export default TempUser;

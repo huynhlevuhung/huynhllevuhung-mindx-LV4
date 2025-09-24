@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import api from "@/utils/api";
 import { Edit, Trash } from "lucide-react";
 
+import AddProductModal from "./AddProductModal";
+import EditProductModal from "./EditProductModal";
+import DeleteProductModal from "./DeleteProductModal";
+
 export default function ProductLayout() {
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -13,26 +17,26 @@ export default function ProductLayout() {
   const [deleting, setDeleting] = useState(null);
   const [adding, setAdding] = useState(false);
 
-const fetchProducts = async () => {
-  try {
-    const res = await api.get("/products");
-    console.log("API /products response:", res.data);
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get("/products");
+      console.log("API /products response:", res.data);
 
-    const data = res.data?.data?.products || [];
-    setProducts(data);
-    setFiltered(data);
-  } catch (err) {
-    console.error("Fetch products failed:", err?.response?.data ?? err);
-    setProducts([]);
-    setFiltered([]);
-  }
-};
+      const data = res.data?.data || [];
+      setProducts(data);
+      setFiltered(data);
+    } catch (err) {
+      console.error("Fetch products failed:", err?.response?.data ?? err);
+      setProducts([]);
+      setFiltered([]);
+    }
+  };
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  // lọc theo search, tag, store
+  // Lọc theo search, tag, store
   useEffect(() => {
     let data = [...products];
     if (search) {
@@ -40,13 +44,13 @@ const fetchProducts = async () => {
         p.productName?.toLowerCase().includes(search.toLowerCase())
       );
     }
-    if (selectedTag) {
-      data = data.filter((p) =>
-        p.tags?.some((t) => t.category === selectedTag)
-      );
-    }
+   if (selectedTag) {
+  data = data.filter((p) =>
+    p.tags?.some((t) => t.nameTag === selectedTag)
+  );
+}
     if (selectedStore) {
-      data = data.filter((p) => p.tags?.some((t) => t.store === selectedStore));
+      data = data.filter((p) => p.store?._id === selectedStore);
     }
     setFiltered(data);
   }, [search, selectedTag, selectedStore, products]);
@@ -71,14 +75,14 @@ const fetchProducts = async () => {
           onChange={(e) => setSelectedTag(e.target.value)}
           className="border rounded-lg px-3 py-2"
         >
-          <option value="">Tất cả tags</option>
-          {[...new Set(products.flatMap((p) => p.tags?.map((t) => t.category)))]
-            .filter(Boolean)
-            .map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
+          <option value="">Tất cả loại</option>
+         {[...new Set(products.flatMap((p) => p.tags?.map((t) => t.nameTag)))]
+  .filter(Boolean)
+  .map((tag) => (
+    <option key={tag} value={tag}>
+      {tag}
+    </option>
+  ))}
         </select>
 
         <select
@@ -86,14 +90,15 @@ const fetchProducts = async () => {
           onChange={(e) => setSelectedStore(e.target.value)}
           className="border rounded-lg px-3 py-2"
         >
-          <option value="">Tất cả người đăng</option>
-          {[...new Set(products.flatMap((p) => p.tags?.map((t) => t.store)))]
-            .filter(Boolean)
-            .map((store) => (
-              <option key={store} value={store}>
-                {store}
-              </option>
-            ))}
+          <option value="">Tất cả cửa hàng</option>
+          {[...new Map(products.map((p) => [p.store?._id, p.store?.name]))].map(
+            ([id, name]) =>
+              id && (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              )
+          )}
         </select>
 
         <button
@@ -129,8 +134,8 @@ const fetchProducts = async () => {
               <div>
                 <div className="font-medium">{p.productName}</div>
                 <div className="text-sm text-gray-500">
-                  {p.tags?.[0]?.category || "Không có tag"}
-                </div>
+  {p.tags?.[0]?.nameTag || "Không có tag"}
+</div>
               </div>
             </div>
 
@@ -138,23 +143,20 @@ const fetchProducts = async () => {
             <div>{formatPrice(p.price)}</div>
 
             {/* Người đăng */}
-            <div>{p.tags?.[0]?.store || "N/A"}</div>
+            <div>{p.store?.name || "N/A"}</div>
 
             {/* Trạng thái */}
-          <div>
-  {p.quantity === 0 ? (
-    <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
-      Hết hàng
-    </span>
-  ) : (
-    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-      Còn {p.quantity} sản phẩm
-    </span>
-  )}
-</div>
-
-
-
+            <div>
+              {p.quantity === 0 ? (
+                <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
+                  Hết hàng
+                </span>
+              ) : (
+                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+                  Còn {p.quantity} sản phẩm
+                </span>
+              )}
+            </div>
 
             {/* Hành động */}
             <div className="flex gap-3 justify-center">
@@ -170,108 +172,25 @@ const fetchProducts = async () => {
       </div>
 
       {/* Popups */}
-      {editing && <div>Popup chỉnh sửa (demo)</div>}
-      {deleting && <div>Popup xác nhận xóa (demo)</div>}
-     {adding && (
-  <div className="fixed inset-0 bg-transparent flex items-center justify-center">
-    {/* Overlay đen mờ, click để đóng modal */}
-    <div
-      className="absolute inset-0 bg-black bg-opacity-50"
-      onClick={() => setAdding(false)}
-    />
-
-    <div className="relative bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-      <h2 className="text-lg font-semibold mb-4">Thêm sản phẩm mới</h2>
-
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          try {
-            const formData = {
-              productName: e.target.productName.value,
-              price: Number(e.target.price.value),
-              quantity: Number(e.target.quantity.value),
-              description: e.target.description.value,
-              img: [e.target.img.value],
-            };
-
-            const res = await api.post("/products", formData);
-            console.log("Thêm sản phẩm thành công:", res.data);
-
-            setAdding(false);
-            fetchProducts(); // refresh danh sách
-          } catch (err) {
-            console.error(
-              "Thêm sản phẩm thất bại:",
-              err?.response?.data ?? err
-            );
-            alert("Thêm sản phẩm thất bại!");
-          }
-        }}
-        className="space-y-4"
-      >
-        <input
-          name="productName"
-          placeholder="Tên sản phẩm"
-          className="w-full border rounded-lg px-3 py-2"
-          required
-        />
-
-        <input
-          name="price"
-          type="number"
-          inputMode="decimal"
-          min="0"
-          step="0.01"
-          placeholder="Giá"
-          className="w-full border rounded-lg px-3 py-2"
-          required
-        />
-
-        <input
-          name="quantity"
-          type="number"
-          inputMode="numeric"
-          min="0"
-          step="1"
-          placeholder="Số lượng"
-          className="w-full border rounded-lg px-3 py-2"
-          required
-        />
-
-        <textarea
-          name="description"
-          placeholder="Mô tả"
-          className="w-full border rounded-lg px-3 py-2"
-        />
-
-        <input
-          name="img"
-          placeholder="Link ảnh (tạm thời)"
-          className="w-full border rounded-lg px-3 py-2"
-        />
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setAdding(false)}
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-          >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Lưu
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+      <AddProductModal
+        open={adding}
+        onClose={() => setAdding(false)}
+        onSuccess={fetchProducts}
+         products={products} 
+      />
 
 
+      <EditProductModal
+        product={editing}
+        onClose={() => setEditing(null)}
+        onSuccess={fetchProducts}
+      />
+
+      <DeleteProductModal
+        product={deleting}
+        onClose={() => setDeleting(null)}
+        onSuccess={fetchProducts}
+      />
     </div>
   );
 }

@@ -1,4 +1,7 @@
-const AppError = require("../utils/appError");
+// const AppError = require("../utils/appError");
+
+import e from "express";
+import AppError from "../utils/appError.js";
 
 //Lỗi id không hợp lệ
 const handleCastErrorDB = (err) => {
@@ -53,7 +56,7 @@ const sendErrorProd = (err, res) => {
   }
 };
 
-module.exports = (err, req, res, next) => {
+const handleError = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
 
@@ -71,3 +74,5 @@ module.exports = (err, req, res, next) => {
     sendErrorProd(error, res);
   }
 };
+
+export default handleError;

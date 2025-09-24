@@ -1,94 +1,228 @@
-const Product = require("../models/Product");
-const catchAsync = require("../utils/catchAsync");
-const AppError = require("../utils/appError");
+import ProductModel from "../models/ProductModel.js";
+import "../models/StoreModel.js";
+import "../models/TagModel.js";
+import TagModel from "../models/TagModel.js";
+import "../models/AreaModel.js";
 
-// CREATE product
-exports.createProduct = catchAsync(async (req, res, next) => {
-  const newProduct = await Product.create(req.body);
+const productController = {
+  // CREATE
+  createProduct: async (req, res) => {
+  try {
+    const { productName, price, quantity, description, img, store } = req.body;
 
-  res.status(201).json({
-    status: "success",
-    data: { product: newProduct },
-  });
-});
+    const newProduct = new ProductModel({
+      productName,
+      price,
+      quantity,
+      description,
+      img,
+      store: store && store.trim() !== "" ? store : null, // 👈 nếu không có thì để null
+    });
 
-// GET ALL products
-exports.getAllProducts = catchAsync(async (req, res, next) => {
-  const products = await Product.find();
+    await newProduct.save();
 
-  res.status(200).json({
-    status: "success",
-    results: products.length,
-    data: { products },
-  });
-});
-
-// GET ONE product
-exports.getProduct = catchAsync(async (req, res, next) => {
-  const product = await Product.findById(req.params.id);
-
-  if (!product) {
-    return next(new AppError("Không tìm thấy sản phẩm", 404));
+    res.status(201).send({
+      message: "Product created successfully",
+      data: newProduct,
+    });
+  } catch (error) {
+    res.status(500).send({ message: "Error", error: error.message });
   }
+},
 
-  res.status(200).json({
-    status: "success",
-    data: { product },
-  });
-});
 
-// UPDATE product
-exports.updateProduct = catchAsync(async (req, res, next) => {
-  const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  // READ
+  getAllProducts: async (req, res) => {
+    try {
+      const curPage = parseInt(req.query.curPage) || 1;
+      const itemQuantity = await ProductModel.countDocuments();
+      const numberOfPages = Math.ceil(itemQuantity / 20);
 
-  if (!product) {
-    return next(new AppError("Không tìm thấy sản phẩm", 404));
-  }
+      if (curPage > numberOfPages && numberOfPages > 0) {
+        return res.status(400).send({ message: "Invalid page number" });
+      }
 
-  res.status(200).json({
-    status: "success",
-    data: { product },
-  });
-});
+      const data = await ProductModel.find()
+        .populate({ path: "store", populate: { path: "area", model: "Area" } })
+        .populate("tags")
+        .limit(20)
+        .skip((curPage - 1) * 20);
 
-// DELETE product
-exports.deleteProduct = catchAsync(async (req, res, next) => {
-  const product = await Product.findByIdAndDelete(req.params.id);
+      res.status(200).send({
+        message: "Success",
+        data,
+        numberOfPages,
+      });
+    } catch (error) {
+      res.status(500).send({
+        message: "Error",
+        error: error.message,
+      });
+    }
+  },
 
-  if (!product) {
-    return next(new AppError("Không tìm thấy sản phẩm", 404));
-  }
+  getOneProduct: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = await ProductModel.findById(id)
+        .populate("store")
+        .populate("tags");
+      if (!data) {
+        return res.status(404).send({ message: "Product not found" });
+      }
+      res.status(200).send({ message: "Success", data });
+    } catch (error) {
+      res.status(500).send({ message: "Error", error: error.message });
+    }
+  },
 
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
-});
+  getMostFavouriteProducts: async (req, res) => {
+    try {
+      const data = await ProductModel.find()
+        .sort({ traded_count: -1 })
+        .limit(20)
+        .populate("store")
+        .populate("tags");
 
-// UPDATE product images
-exports.updateProductImages = catchAsync(async (req, res, next) => {
-  if (!req.files || req.files.length === 0) {
-    return next(new AppError("Chưa chọn file ảnh", 400));
-  }
+      res.status(200).send({ message: "Success", data });
+    } catch (error) {
+      res.status(500).send({ message: "Error", error: error.message });
+    }
+  },
 
-  // Lấy danh sách file vừa upload
-  const images = req.files.map((file) => file.filename);
+  getTopRatingProducts: async (req, res) => {
+    try {
+      const products = await ProductModel.find()
+        .populate("store")
+        .populate("tags");
 
-  const product = await Product.findByIdAndUpdate(
-    req.params.id,
-    { $push: { img: { $each: images } } }, // thêm nhiều ảnh vào mảng
-    { new: true, runValidators: true }
-  );
+      const data = products
+        .sort((a, b) => b.curRating - a.curRating)
+        .slice(0, 20);
 
-  if (!product) {
-    return next(new AppError("Không tìm thấy sản phẩm", 404));
-  }
+      res.status(200).send({ message: "Success", data });
+    } catch (error) {
+      res.status(500).send({ message: "Error", error: error.message });
+    }
+  },
 
-  res.status(200).json({
-    status: "success",
-    data: { product },
-  });
-});
+  getProductsByTag: async (req, res) => {
+    try {
+      const { tagId } = req.params;
+      const curPage = parseInt(req.query.curPage) || 1;
+      const itemQuantity = await ProductModel.countDocuments({ tags: tagId });
+      const numberOfPages = Math.ceil(itemQuantity / 20);
+
+      if (curPage > numberOfPages && numberOfPages > 0) {
+        return res.status(400).send({ message: "Invalid page number" });
+      }
+
+      const tag = await TagModel.findById(tagId);
+
+      const data = await ProductModel.find({ tags: tag })
+        .populate("store")
+        .populate("tags")
+        .limit(20)
+        .skip((curPage - 1) * 20);
+
+      res.status(200).send({
+        message: "Success",
+        data,
+        numberOfPages,
+      });
+    } catch (error) {
+      res.status(500).send({
+        message: "Error",
+        error: error.message,
+      });
+    }
+  },
+
+  getProductsByPriceRange: async (req, res) => {
+    try {
+      const { min, max } = req.query;
+      const curPage = parseInt(req.query.curPage) || 1;
+      const itemQuantity = await ProductModel.countDocuments({
+        price: { $gte: min || 0, $lte: max || Number.MAX_SAFE_INTEGER },
+      });
+      const numberOfPages = Math.ceil(itemQuantity / 20);
+      const data = await ProductModel.find({
+        price: { $gte: min || 0, $lte: max || Number.MAX_SAFE_INTEGER },
+      })
+        .populate("store")
+        .populate("tags")
+        .limit(20)
+        .skip((curPage - 1) * 20);
+
+      res.status(200).send({
+        message: "Success",
+        data,
+        numberOfPages,
+      });
+    } catch (error) {
+      res.status(500).send({
+        message: "Error",
+        error: error.message,
+      });
+    }
+  },
+
+  getProductsByStore: async (req, res) => {
+    try {
+      const { storeId } = req.params;
+      const curPage = parseInt(req.query.curPage) || 1;
+      const itemQuantity = await ProductModel.countDocuments({ store: storeId });
+      const numberOfPages = Math.ceil(itemQuantity / 20);
+      const data = await ProductModel.find({ store: storeId })
+        .populate("store")
+        .populate("tags")
+        .limit(20)
+        .skip((curPage - 1) * 20);
+      res.status(200).send({
+        message: "Success",
+        data,
+        numberOfPages,
+      });
+    } catch (error) {
+      res.status(500).send({
+        message: "Error",
+        error: error.message,
+      });
+    }
+  },
+
+  // UPDATE
+  updateProduct: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await ProductModel.findByIdAndUpdate(id, req.body, { new: true });
+      if (!product) {
+        return res.status(404).send({ message: "Product not found" });
+      }
+      res.status(200).send({
+        message: "Product updated successfully",
+        data: product,
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error", error: error.message });
+    }
+  },
+
+  // DELETE
+  deleteProduct: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const product = await ProductModel.findByIdAndDelete(id);
+      if (!product) {
+        return res.status(404).send({ message: "Product not found" });
+      }
+      res.status(200).send({
+        message: "Product deleted successfully",
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Error", error: error.message });
+    }
+  },
+};
+
+export default productController;

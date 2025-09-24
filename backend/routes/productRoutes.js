@@ -1,30 +1,24 @@
-const express = require("express");
-const productController = require("../controllers/productController");
-const authController = require("../controllers/authController");
-const uploadProductImg = require("../middlewares/uploadProductImg");
+import { Router } from "express";
+import productController from "../controllers/productController.js";
 
-const router = express.Router();
+const router = Router();
 
-// Nếu muốn chỉ admin CRUD thì bật middleware này
-// router.use(authController.protect, authController.restrictTo("admin"));
+// Create
+router.post("/", productController.createProduct);
 
-router
-  .route("/")
-  .get(productController.getAllProducts)   // GET /api/products
-  .post(productController.createProduct);  // POST /api/products
+// Read
+router.get("/", productController.getAllProducts);
+router.get("/most-favourite", productController.getMostFavouriteProducts);
+router.get("/top-rating", productController.getTopRatingProducts);
+router.get("/tag/:tagId", productController.getProductsByTag);
+router.get("/price/range", productController.getProductsByPriceRange);
+router.get("/store/:storeId", productController.getProductsByStore);
+router.get("/:id", productController.getOneProduct);
 
-router
-  .route("/:id")
-  .get(productController.getProduct)       // GET /api/products/:id
-  .patch(productController.updateProduct)  // PATCH /api/products/:id
-  .delete(productController.deleteProduct);// DELETE /api/products/:id
+// Update
+router.put("/:id", productController.updateProduct);
 
-router
-  .route("/:id/images")
-  .patch(
-    uploadProductImg.array("images", 5), // upload tối đa 5 ảnh
-    productController.updateProductImages
-  );
+// Delete
+router.delete("/:id", productController.deleteProduct);
 
-
-module.exports = router;
+export default router;

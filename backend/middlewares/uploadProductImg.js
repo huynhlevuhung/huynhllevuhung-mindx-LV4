@@ -1,5 +1,6 @@
-const multer = require("multer");
-const path = require("path");
+// middleware/uploadProductImg.js
+import multer from "multer";
+import path from "path";
 
 // Lưu file trong thư mục uploads/products
 const storage = multer.diskStorage({
@@ -24,4 +25,4 @@ const fileFilter = (req, file, cb) => {
 
 const uploadProductImg = multer({ storage, fileFilter });
 
-module.exports = uploadProductImg;
+export default uploadProductImg;

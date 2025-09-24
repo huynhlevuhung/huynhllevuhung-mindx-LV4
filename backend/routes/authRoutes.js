@@ -1,35 +1,20 @@
-const express = require("express");
+import express from "express";
+import User from "../models/UserModel.js";
+//import { verifyToken } from "../middlewares/authMiddleware.js";
+
 const router = express.Router();
-const jwt = require("jsonwebtoken");
-const User = require("../models/UserModel");
 
-// middleware viết trực tiếp ở đây
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "No token provided" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // { id: "...", iat, exp }
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid or expired token" });
-  }
-};
-
-// route /me
+// GET /me
 router.get("/me", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,12 +1,13 @@
-const mongoose = require("mongoose");
-const validator = require("validator");
-const bcrypt = require("bcrypt");
+// models/UserModel.js
+import mongoose from "mongoose";
+import validator from "validator";
+import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
-      require: [true, "Tên đăng nhập không được trống"],
+      required: [true, "Tên đăng nhập không được trống"],
       unique: true,
       trim: true,
     },
@@ -30,64 +31,45 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
-    fullname: {
-      type: String,
-    },
+    fullname: { type: String },
 
-    phone: {
-      type: String,
-    },
+    phone: { type: String },
 
-    avatar: {
-      type: String,
-    },
+    avatar: { type: String },
 
-    address: {
-      type: String,
-    },
+    address: [{ type: String }],
 
-    balance: {
-      type: Number,
-      default: 0,
-    },
+    balance: { type: Number, default: 0 },
 
     rank: {
       type: String,
-      enum: ["bronze", "silver", "gold"],
+      enum: ["bronze", "silver", "gold", "platinum"],
       default: "bronze",
     },
 
     role: {
       type: String,
-      enum: ["user", "seller", "shipper", "admin"],
+      enum: ["user", "seller", "shipper", "admin", "route manager"],
       default: "user",
     },
 
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+    isActive: { type: Boolean, default: true },
 
     otpReset: {
       code: String,
       expiresAt: Date,
-      attemptCount: {
-        type: Number,
-        default: 0,
-      },
+      attemptCount: { type: Number, default: 0 },
     },
   },
-
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
+// 📌 Middleware hash password trước khi save
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password") || this.skipHash) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-const User = mongoose.model("User", userSchema);
-module.exports = User;
+const UserModel = mongoose.model("User", userSchema);
+export default UserModel;

@@ -1,12 +1,22 @@
-const User = require("../models/UserModel");
-const catchAsync = require("../utils/catchAsync");
-const AppError = require("../utils/appError");
-const sendEmail = require("../utils/mail");
-const crypto = require("crypto");
-const TempUser = require("../models/TempUserModel");
-const { signToken } = require("../utils/jwt");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+// const User = require("../models/UserModel");
+// const catchAsync = require("../utils/catchAsync");
+// const AppError = require("../utils/appError");
+// const sendEmail = require("../utils/mail");
+// const crypto = require("crypto");
+// const TempUser = require("../Model/TempUserModel");
+// const { signToken } = require("../utils/jwt");
+// const bcrypt = require("bcrypt");
+// const jwt = require("jsonwebtoken");
+import User from "../models/UserModel.js";
+import catchAsync from "../utils/catchAsync.js";
+import AppError from "../utils/appError.js";
+import sendEmail from "../utils/mail.js"; 
+import crypto from "crypto";
+import TempUser from "../models/TempUserModel.js";
+import { signToken } from "../utils/jwt.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
 
 const createSendToken = (user, message, statusCode, res) => {
   const token = signToken(user._id);
@@ -19,21 +29,19 @@ const createSendToken = (user, message, statusCode, res) => {
   });
 
   res.status(statusCode).json({
-     status: "success",
+    status: "success",
     message,
     data: {
-      token, // ✅ thêm token để FE lưu
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
-        role: user.role, // ✅ thêm role
       },
     },
   });
 };
 
-exports.signup = catchAsync(async (req, res, next) => {
+const signup = catchAsync(async (req, res, next) => {
   const { username, email, password, passwordConfirm } = req.body;
   const existingUser = await User.findOne({
     $or: [{ username }, { email }],
@@ -65,7 +73,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.verifyOtp = catchAsync(async (req, res, next) => {
+const verifyOtp = catchAsync(async (req, res, next) => {
   const { email, otp } = req.body;
 
   const tempUser = await TempUser.findOne({
@@ -90,7 +98,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   createSendToken(user, "Đăng ký tài khoản thành công", 200, res);
 });
 
-exports.login = catchAsync(async (req, res, next) => {
+const login = catchAsync(async (req, res, next) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -112,7 +120,7 @@ exports.login = catchAsync(async (req, res, next) => {
   createSendToken(user, "Đăng nhập thành công", 200, res);
 });
 
-exports.resendOtp = catchAsync(async (req, res, next) => {
+const resendOtp = catchAsync(async (req, res, next) => {
   const { email } = req.body;
 
   const tempUser = await TempUser.findOne({ email });
@@ -139,7 +147,7 @@ exports.resendOtp = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getAllUsers = catchAsync(async (req, res, next) => {
+const getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find();
   res.status(200).json({
     status: "success",
@@ -149,7 +157,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.resendOtpForgotPassword = catchAsync(async (req, res, next) => {
+const resendOtpForgotPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
 
   const user = await User.findOne({ email });
@@ -180,7 +188,7 @@ exports.resendOtpForgotPassword = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.forgotPassword = catchAsync(async (req, res, next) => {
+const forgotPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
 
   const user = await User.findOne({ email });
@@ -207,7 +215,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   res.status(200).json({ message: "OTP đã gửi tới email của bạn" });
 });
 
-exports.verifyForgotPassword = catchAsync(async (req, res, next) => {
+const verifyForgotPassword = catchAsync(async (req, res, next) => {
   const { email, otp } = req.body;
   const user = await User.findOne({ email });
 
@@ -235,7 +243,7 @@ exports.verifyForgotPassword = catchAsync(async (req, res, next) => {
   res.status(200).json({ message: "OTP hợp lệ, cho phép reset mật khẩu" });
 });
 
-exports.verifyResetTokenCookie = catchAsync(async (req, res, next) => {
+const verifyResetTokenCookie = catchAsync(async (req, res, next) => {
   const token = req.cookies.resetToken;
 
   if (!token) return next(new AppError("Không có quyền đổi mật khẩu", 401));
@@ -247,7 +255,7 @@ exports.verifyResetTokenCookie = catchAsync(async (req, res, next) => {
   next();
 });
 
-exports.resetPassword = catchAsync(async (req, res, next) => {
+const resetPassword = catchAsync(async (req, res, next) => {
   const { newPassword } = req.body;
   const { email } = req;
 
@@ -263,7 +271,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   res.json({ message: "Đổi mật khẩu thành công" });
 });
 
-exports.protect = catchAsync(async (req, res, next) => {
+const protect = catchAsync(async (req, res, next) => {
   let token;
 
   if (req.cookies && req.cookies.jwt) {
@@ -292,13 +300,17 @@ exports.protect = catchAsync(async (req, res, next) => {
   next();
 });
 
-exports.restrictTo = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        message: "Bạn không có quyền truy cập vào tài nguyên này",
-      });
-    }
-    next();
-  };
+const authController = {
+  signup,
+  verifyOtp,
+  login,
+  resendOtp,
+  getAllUsers,
+  resendOtpForgotPassword,
+  forgotPassword,
+  verifyForgotPassword,
+  verifyResetTokenCookie,
+  resetPassword,
+  protect,
 };
+export default authController;
