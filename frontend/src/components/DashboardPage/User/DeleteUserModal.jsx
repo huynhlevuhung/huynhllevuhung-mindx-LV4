@@ -1,6 +1,6 @@
 import { Button } from "../../ui/button";
 
-export default function DeleteConfirmModal({ user, onConfirm, onClose }) {
+export default function DeleteUserModal({ user, onConfirm, onClose }) {
   if (!user) return null;
 
   return (
@@ -9,7 +9,7 @@ export default function DeleteConfirmModal({ user, onConfirm, onClose }) {
         <h2 className="text-lg font-semibold mb-4">Xác nhận xóa</h2>
         <p className="mb-6">
           Bạn có chắc muốn xóa người dùng{" "}
-          <span className="font-medium">{user.fullname}</span> không?
+          <span className="font-medium">{user.fullname || user.username}</span>?
         </p>
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>

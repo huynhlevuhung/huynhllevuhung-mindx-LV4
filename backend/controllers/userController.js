@@ -64,6 +64,9 @@ exports.createUser = catchAsync(async (req, res, next) => {
   });
 });
 
+
+
+
 // 📌 GET ALL USERS
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find().select("-password");
@@ -89,41 +92,60 @@ exports.getUser = catchAsync(async (req, res, next) => {
   });
 });
 
-// UPDATE USER (Admin/User)
+// // UPDATE USER (Admin/User)
+// exports.updateUser = catchAsync(async (req, res, next) => {
+//   let targetUserId = req.params.id;
+
+//   // Nếu không phải admin thì chỉ cho phép update chính mình
+//   if (req.user.role !== "admin") {
+//     if (req.params.id !== req.user.id) {
+//       return next(new AppError("Bạn không có quyền cập nhật user khác", 403));
+//     }
+
+//     // Nếu là user thường -> chỉ cho phép sửa fullname, phone, avatar
+//     const allowedFields = ["fullname", "phone"];
+//     const updateData = {};
+
+//     allowedFields.forEach((field) => {
+//       if (req.body[field]) updateData[field] = req.body[field];
+//     });
+
+//     if (req.file) {
+//       updateData.avatar = req.file.filename;
+//     }
+
+//     const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, {
+//       new: true,
+//       runValidators: true,
+//     }).select("-password");
+
+//     return res.status(200).json({
+//       status: "success",
+//       data: { user: updatedUser },
+//     });
+//   }
+
+  
+
+//   // Nếu là admin -> full quyền update
+//   const updatedUser = await User.findByIdAndUpdate(targetUserId, req.body, {
+//     new: true,
+//     runValidators: true,
+//   }).select("-password");
+
+//   if (!updatedUser) {
+//     return next(new AppError("Không tìm thấy user", 404));
+//   }
+
+//   res.status(200).json({
+//     status: "success",
+//     data: { user: updatedUser },
+//   });
+// });
+
+// UPDATE USER (Không phân quyền, ai cũng có thể update từ UserLayout)
 exports.updateUser = catchAsync(async (req, res, next) => {
-  let targetUserId = req.params.id;
-
-  // Nếu không phải admin thì chỉ cho phép update chính mình
-  if (req.user.role !== "admin") {
-    if (req.params.id !== req.user.id) {
-      return next(new AppError("Bạn không có quyền cập nhật user khác", 403));
-    }
-
-    // Nếu là user thường -> chỉ cho phép sửa fullname, phone, avatar
-    const allowedFields = ["fullname", "phone"];
-    const updateData = {};
-
-    allowedFields.forEach((field) => {
-      if (req.body[field]) updateData[field] = req.body[field];
-    });
-
-    if (req.file) {
-      updateData.avatar = req.file.filename;
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
-
-    return res.status(200).json({
-      status: "success",
-      data: { user: updatedUser },
-    });
-  }
-
-  // Nếu là admin -> full quyền update
-  const updatedUser = await User.findByIdAndUpdate(targetUserId, req.body, {
+  const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
   }).select("-password");

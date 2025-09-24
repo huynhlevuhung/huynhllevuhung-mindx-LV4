@@ -1,6 +1,8 @@
 const express = require("express");
 const userRouter = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
+const productRoutes = require("./routes/productRoutes");
+const tagRoutes = require("./routes/tagRoutes");
 
 const cors = require("cors");
 const globalErrorHandle = require("./controllers/errorController");
@@ -34,7 +36,8 @@ app.use(cookieParser());
 
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRoutes);
-
+app.use("/api/products", productRoutes);
+app.use("/api/tags", tagRoutes);
 app.use(
   "/img/avatars",
   express.static(path.join(__dirname, "public/img/avatars"))

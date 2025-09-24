@@ -2,6 +2,7 @@ const express = require("express");
 const authController = require("../controllers/authController");
 const userController = require("../controllers/userController");
 const uploadAvatar = require("../middlewares/uploadAvatar");
+const uploadProductImg = require("../middlewares/uploadProductImg");
 
 const router = express.Router();
 
@@ -39,19 +40,19 @@ router
 
 // ============= ADMIN CRUD (NEW) =============
 // bảo vệ route, chỉ admin mới truy cập
-router.use(authController.protect, authController.restrictTo("admin"));
+//router.use(authController.protect, authController.restrictTo("admin"));
 
-// CRUD cho user (admin quản lý)
 router
   .route("/")
-  .get(userController.getAllUsers)     // NEW: GET /api/v1/users
-  .post(userController.createUser);    // NEW: POST /api/v1/users
+  .get(userController.getAllUsers)   // GET /api/users
+  .post(userController.createUser);  // POST /api/users
 
 router
   .route("/:id")
-  .get(userController.getUser)         // NEW: GET /api/v1/users/:id
-  .patch(userController.updateUser)    // NEW: PATCH /api/v1/users/:id
-  .delete(userController.deleteUser);  // NEW: DELETE /api/v1/users/:id
+  .get(userController.getUser)       // GET /api/users/:id
+  .patch(userController.updateUser)  // PATCH /api/users/:id
+  .delete(userController.deleteUser);// DELETE /api/users/:id
+
 
 
 
