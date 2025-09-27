@@ -1,6 +1,3 @@
-// const mongoose = require("mongoose");
-// const bcrypt = require("bcrypt");
-// const validator = require("validator");
 import mongoose from "mongoose";
 import validator from "validator";
 import bcrypt from "bcrypt";
@@ -12,14 +9,12 @@ const tempUserSchema = new mongoose.Schema(
       required: [true, "Tên đăng nhập không được trống"],
       trim: true,
     },
-
     email: {
       type: String,
       required: [true, "Email không được trống"],
       lowercase: true,
       validate: [validator.isEmail, "Sai định dạng Email"],
     },
-
     password: {
       type: String,
       required: [true, "Mật khẩu không được trống"],
@@ -30,7 +25,6 @@ const tempUserSchema = new mongoose.Schema(
       ],
       select: false,
     },
-
     passwordConfirm: {
       type: String,
       required: [true, "Vui lòng xác nhận lại mật khẩu"],
@@ -42,28 +36,23 @@ const tempUserSchema = new mongoose.Schema(
         message: "Mật khẩu xác nhận không khớp",
       },
     },
-
-    otp: {
-      type: String,
-      required: true,
-    },
+    otp: { type: String, required: true },
     otpExpires: {
       type: Date,
       required: true,
-      index: { expires: 0 },
+      index: { expires: 0 }, // TTL index
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// tempUserSchema.pre("save", async function (next) {
-//   if (!this.isModified("password")) return next();
-//   this.password = await bcrypt.hash(this.password, 12);
-//   this.passwordConfirm = undefined;
-//   next();
-// });
+// Hash password trước khi lưu
+tempUserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  this.passwordConfirm = undefined; // không lưu confirm
+  next();
+});
 
 const TempUser = mongoose.model("TempUser", tempUserSchema);
 export default TempUser;

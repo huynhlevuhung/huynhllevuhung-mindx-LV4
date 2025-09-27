@@ -1,46 +1,51 @@
 import mongoose from "mongoose";
 
-const billSchema = new mongoose.Schema({
-    buyer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+const billSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     store: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Store',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      required: true,
     },
-    deliveryAddress: { type: String, required: true },
-    products: [
-        {
-            product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-            quantity: { type: Number, required: true },
-            price: { type: Number, required: true } // Lưu giá tại thời điểm mua
-        }
-    ],
-    totalPrice: { type: Number, required: true },
-    // khoi tao pending->store comfirmed: distributing-> RouteDeliveryManager comfirmed + add Delivery Man: shipping->delivered
-    // buyer comfirmed: received
-    // buyer canceled: canceled
-    status: { 
-        type: String, 
-        enum: ['pending', 'shipping', 'delivered', 'canceled', 'distributing', 'received'], 
-        default: 'pending' 
+    status: {
+      type: String,
+      enum: ["pending", "paid", "shipped", "completed", "cancelled"],
+      default: "pending",
     },
-    createdAt: { type: Date, default: Date.now },
-    promisedDeliveryDate: { 
-        type: Date, 
-        default: () => {
-            const now = new Date();
-            now.setDate(now.getDate() + 7); // cộng thêm 7 ngày
-            return now;
-        }
+    total_amount: {
+      type: Number,
+      default: 0,
     },
-    deliveryMan: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    }
-});
+    final_amount: {
+      type: Number,
+      default: 0,
+    },
+    promotion: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Promotion",
+      default: null,
+    },
+    address: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Address",
+      required: true,
+    },
+    notes: {
+      type: String,
+      default: "",
+    },
+  },
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+  }
+);
 
-const BillModel = mongoose.model("Bill", billSchema);
-export default BillModel;
+
+
+const Bill = mongoose.model("Bill", billSchema);
+export default Bill;

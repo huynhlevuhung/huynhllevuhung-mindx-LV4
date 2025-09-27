@@ -17,6 +17,7 @@ export default function ProductLayout() {
   const [deleting, setDeleting] = useState(null);
   const [adding, setAdding] = useState(false);
 
+  
   const fetchProducts = async () => {
     try {
       const res = await api.get("/products");
@@ -127,7 +128,7 @@ export default function ProductLayout() {
             {/* Sản phẩm */}
             <div className="flex items-center gap-3">
               <img
-                src={p.img?.[0] || "https://via.placeholder.com/50"}
+                src={p.img?.[0] || "https://png.pngtree.com/png-clipart/20230418/original/pngtree-products-line-icon-png-image_9065446.png"}
                 alt="product"
                 className="w-12 h-12 object-cover rounded"
               />

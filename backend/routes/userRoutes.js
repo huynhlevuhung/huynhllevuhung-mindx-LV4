@@ -1,54 +1,54 @@
 import express from "express";
 import authController from "../controllers/authController.js";
+
 import userController from "../controllers/userController.js";
 import uploadAvatar from "../middlewares/uploadAvatar.js";
-
+console.log("authController:", authController);
 const router = express.Router();
 
 // ================= AUTH =================
-router.get("/", authController.getAllUsers);
-
+// Signup, verify OTP, login, forgot/reset password
 router.post("/signup", authController.signup);
 router.post("/verify-otp", authController.verifyOtp);
 router.post("/resend-otp", authController.resendOtp);
-
 router.post("/login", authController.login);
 
 router.post("/forgot-password", authController.forgotPassword);
-router.post(
-  "/resend-otp-forgot-password",
-  authController.resendOtpForgotPassword
-);
+router.post("/resend-otp-forgot-password", authController.resendOtpForgotPassword);
 router.post("/verify-forgot-password", authController.verifyForgotPassword);
-
 router.post(
   "/reset-password",
   authController.verifyResetTokenCookie,
   authController.resetPassword
 );
 
+// ================= USER PROFILE =================
+// Lấy thông tin hiện tại
 router
   .route("/me")
   .get(authController.protect, userController.getMe)
   .patch(
     authController.protect,
-    uploadAvatar.single("avatar"),
+    uploadAvatar.single("avatar"), // upload avatar
     userController.updateMe
   );
 
-// ================= ADMIN CRUD =================
-// Nếu muốn bảo vệ admin:
-// router.use(authController.protect, authController.restrictTo("admin"));
+// ================= ADMIN CRUD USERS =================
+// Chỉ admin mới được CRUD user
+router.use(authController.protect);
+router.use(authController.restrictTo("admin"));
+router.get("/stats/count-non-admins", protect, restrictTo("admin"), userController.countNonAdmins);
+
 
 router
   .route("/")
-  .get(userController.getAllUsers)    // GET /api/users
-  .post(userController.createUser);   // POST /api/users
+  .get(userController.getAllUsers)   // GET all users
+  .post(userController.createUser);  // CREATE user
 
 router
   .route("/:id")
-  .get(userController.getUser)        // GET /api/users/:id
-  .patch(userController.updateUser)   // PATCH /api/users/:id
-  .delete(userController.deleteUser); // DELETE /api/users/:id
+  .get(userController.getUser)       // GET user by ID
+  .patch(userController.updateUser)  // UPDATE user
+  .delete(userController.deleteUser); // DELETE user
 
 export default router;

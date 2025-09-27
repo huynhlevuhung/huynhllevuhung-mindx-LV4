@@ -1,23 +1,15 @@
-// const User = require("../models/UserModel");
-// const catchAsync = require("../utils/catchAsync");
-// const AppError = require("../utils/appError");
-// const sendEmail = require("../utils/mail");
-// const crypto = require("crypto");
-// const TempUser = require("../Model/TempUserModel");
-// const { signToken } = require("../utils/jwt");
-// const bcrypt = require("bcrypt");
-// const jwt = require("jsonwebtoken");
+// controllers/authController.js
 import User from "../models/UserModel.js";
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/appError.js";
-import sendEmail from "../utils/mail.js"; 
+import sendEmail from "../utils/mail.js";
 import crypto from "crypto";
 import TempUser from "../models/TempUserModel.js";
 import { signToken } from "../utils/jwt.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-
+// ----------------- Helper -----------------
 const createSendToken = (user, message, statusCode, res) => {
   const token = signToken(user._id);
 
@@ -25,7 +17,7 @@ const createSendToken = (user, message, statusCode, res) => {
     httpOnly: true,
     secure: false,
     sameSite: "Lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
   });
 
   res.status(statusCode).json({
@@ -41,8 +33,10 @@ const createSendToken = (user, message, statusCode, res) => {
   });
 };
 
+// ----------------- Signup / OTP -----------------
 const signup = catchAsync(async (req, res, next) => {
   const { username, email, password, passwordConfirm } = req.body;
+
   const existingUser = await User.findOne({
     $or: [{ username }, { email }],
   });
@@ -58,7 +52,7 @@ const signup = catchAsync(async (req, res, next) => {
     password,
     passwordConfirm,
     otp,
-    otpExpires: Date.now() + 5 * 60 * 1000,
+    otpExpires: Date.now() + 5 * 60 * 1000, // 5 phút
   });
 
   await sendEmail({
@@ -91,33 +85,9 @@ const verifyOtp = catchAsync(async (req, res, next) => {
     password: tempUser.password,
   });
 
-  console.log(user);
-
   await TempUser.deleteOne({ _id: tempUser._id });
 
   createSendToken(user, "Đăng ký tài khoản thành công", 200, res);
-});
-
-const login = catchAsync(async (req, res, next) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return next(new AppError("Vui lòng nhập email và mật khẩu", 400));
-  }
-
-  const user = await User.findOne({ username }).select("+password");
-
-  if (!user) {
-    return next(new AppError("Tên đăng nhập hoặc mật khẩu không đúng", 401));
-  }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-    return next(new AppError("Tên đăng nhập hoặc mật khẩu không đúng", 401));
-  }
-
-  createSendToken(user, "Đăng nhập thành công", 200, res);
 });
 
 const resendOtp = catchAsync(async (req, res, next) => {
@@ -125,9 +95,7 @@ const resendOtp = catchAsync(async (req, res, next) => {
 
   const tempUser = await TempUser.findOne({ email });
   if (!tempUser) {
-    return next(
-      new AppError("Không tìm thấy yêu cầu đăng ký với email này", 404)
-    );
+    return next(new AppError("Không tìm thấy yêu cầu đăng ký với email này", 404));
   }
 
   const otp = crypto.randomInt(100000, 999999).toString();
@@ -147,69 +115,47 @@ const resendOtp = catchAsync(async (req, res, next) => {
   });
 });
 
-const getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find();
-  res.status(200).json({
-    status: "success",
-    data: {
-      users,
-    },
-  });
-});
+// ----------------- Login -----------------
+const login = catchAsync(async (req, res, next) => {
+  const { username, password } = req.body;
 
-const resendOtpForgotPassword = catchAsync(async (req, res, next) => {
-  const { email } = req.body;
-
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    return next(new AppError("Không tìm thấy người dùng", 404));
+  if (!username || !password) {
+    return next(new AppError("Vui lòng nhập email và mật khẩu", 400));
   }
 
-  const otp = crypto.randomInt(100000, 999999).toString();
+  const user = await User.findOne({ username }).select("+password");
+  if (!user) {
+    return next(new AppError("Tên đăng nhập hoặc mật khẩu không đúng", 401));
+  }
 
-  user.otpReset = {
-    code: otp,
-    expiresAt: Date.now() + 5 * 60 * 1000,
-    attemptCount: 0,
-  };
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return next(new AppError("Tên đăng nhập hoặc mật khẩu không đúng", 401));
+  }
 
-  await user.save({ validateBeforeSave: false });
-
-  await sendEmail({
-    email,
-    subject: "Mã OTP xác thực mới",
-    message: `Mã OTP mới của bạn là: ${otp}. Mã này sẽ hết hạn sau 5 phút.`,
-  });
-
-  res.status(200).json({
-    status: "success",
-    message: "OTP mới đã được gửi đến email của bạn.",
-  });
+  createSendToken(user, "Đăng nhập thành công", 200, res);
 });
 
+// ----------------- Quên mật khẩu / Reset -----------------
 const forgotPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
-
   const user = await User.findOne({ email });
   if (!user) {
     return next(new AppError("Email không tồn tại", 404));
   }
 
   const otp = crypto.randomInt(100000, 999999).toString();
-
   user.otpReset = {
     code: otp,
     expiresAt: Date.now() + 5 * 60 * 1000,
     attemptCount: 0,
   };
-
-  await user.save();
+  await user.save({ validateBeforeSave: false });
 
   await sendEmail({
     email,
     subject: "Mã OTP khôi phục mật khẩu",
-    message: `Mã OTP mới của bạn là: ${otp}. Mã này sẽ hết hạn sau 5 phút.`,
+    message: `Mã OTP của bạn là: ${otp}. Mã này sẽ hết hạn sau 5 phút.`,
   });
 
   res.status(200).json({ message: "OTP đã gửi tới email của bạn" });
@@ -245,13 +191,10 @@ const verifyForgotPassword = catchAsync(async (req, res, next) => {
 
 const verifyResetTokenCookie = catchAsync(async (req, res, next) => {
   const token = req.cookies.resetToken;
-
   if (!token) return next(new AppError("Không có quyền đổi mật khẩu", 401));
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
   req.email = decoded.id;
-
   next();
 });
 
@@ -260,17 +203,16 @@ const resetPassword = catchAsync(async (req, res, next) => {
   const { email } = req;
 
   const user = await User.findOne({ email });
-
   if (!user) return next(new AppError("Người dùng không tồn tại", 404));
 
   user.password = newPassword;
   await user.save();
 
   res.clearCookie("resetToken");
-
   res.json({ message: "Đổi mật khẩu thành công" });
 });
 
+// ----------------- Middleware -----------------
 const protect = catchAsync(async (req, res, next) => {
   let token;
 
@@ -284,13 +226,10 @@ const protect = catchAsync(async (req, res, next) => {
   }
 
   if (!token) {
-    return next(
-      new AppError("Bạn chưa đăng nhập, vui lòng đăng nhập lại", 401)
-    );
+    return next(new AppError("Bạn chưa đăng nhập, vui lòng đăng nhập lại", 401));
   }
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
     return next(new AppError("Người dùng không tồn tại", 401));
@@ -300,17 +239,68 @@ const protect = catchAsync(async (req, res, next) => {
   next();
 });
 
+// ----------------- GET ME -----------------
+const getMe = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select("-password");
+  if (!user) {
+    return next(new AppError("Không tìm thấy người dùng", 404));
+  }
+  res.status(200).json({ status: "success", data: { user } });
+});
+
+const resendOtpForgotPassword = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user || !user.otpReset) {
+    return next(new AppError("Không tìm thấy user hoặc chưa yêu cầu OTP", 404));
+  }
+
+  // Tạo OTP mới
+  const otp = crypto.randomInt(100000, 999999).toString();
+  user.otpReset = {
+    code: otp,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+    attemptCount: 0,
+  };
+  await user.save({ validateBeforeSave: false });
+
+  await sendEmail({
+    email,
+    subject: "Mã OTP khôi phục mật khẩu (OTP mới)",
+    message: `Mã OTP mới của bạn là: ${otp}. Mã này sẽ hết hạn sau 5 phút.`,
+  });
+
+  res.status(200).json({
+    status: "success",
+    message: "OTP mới đã được gửi đến email của bạn",
+  });
+});
+
+const restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(
+        new AppError("Bạn không có quyền thực hiện hành động này", 403)
+      );
+    }
+    next();
+  };
+};
+// ----------------- Export -----------------
 const authController = {
   signup,
   verifyOtp,
-  login,
   resendOtp,
-  getAllUsers,
-  resendOtpForgotPassword,
+  login,
   forgotPassword,
+  resendOtpForgotPassword,
   verifyForgotPassword,
   verifyResetTokenCookie,
   resetPassword,
   protect,
+  restrictTo,
+  getMe,
 };
+
 export default authController;
