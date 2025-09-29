@@ -2,6 +2,7 @@
   import User from "../models/UserModel.js";
   import catchAsync from "../utils/catchAsync.js";
   import AppError from "../utils/appError.js";
+  import cloudinary from "../utils/cloudinary.js"; 
 
   // 📌 Lấy thông tin user hiện tại
   const getMe = catchAsync(async (req, res, next) => {
@@ -26,6 +27,7 @@
     if (req.file && req.file.path) {
       updateData.avatar = req.file.path; // link Cloudinary
     }
+    
 
     const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, {
       new: true,
@@ -57,14 +59,21 @@
   });
 
   // 📌 Tạo user (Admin)
-  const createUser = catchAsync(async (req, res, next) => {
-    const newUser = await User.create(req.body);
+ const createUser = catchAsync(async (req, res, next) => {
+  // Nếu có upload avatar thì gắn link vào body
+  if (req.file && req.file.path) {
+    req.body.avatar = req.file.path; // link Cloudinary
+    // Nếu bạn lưu luôn public_id để tiện xóa sau này:
+    if (req.file.filename) req.body.avatarId = req.file.filename;
+  }
 
-    res.status(201).json({
-      status: "success",
-      data: { user: newUser },
-    });
+  const newUser = await User.create(req.body);
+
+  res.status(201).json({
+    status: "success",
+    data: { user: newUser },
   });
+}); 
 
   // 📌 Lấy danh sách user
   const getAllUsers = catchAsync(async (req, res, next) => {
@@ -104,17 +113,28 @@
     });
   });
 
-  // 📌 Xóa user
-    const deleteUser = catchAsync(async (req, res, next) => {
-      const user = await User.findByIdAndDelete(req.params.id);
+ // 📌 Xóa user
+const deleteUser = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
 
-      if (!user) return next(new AppError("Không tìm thấy user", 404));
+  if (!user) return next(new AppError("Không tìm thấy user", 404));
 
-      res.status(204).json({
-        status: "success",
-        data: null,
-      });
-    });
+  // Nếu user có avatar thì xóa trên Cloudinary
+  if (user.avatarId) {
+    try {
+      await cloudinary.uploader.destroy(user.avatarId);
+    } catch (err) {
+      console.error("Lỗi khi xóa avatar Cloudinary:", err.message);
+    }
+  }
+
+  await User.findByIdAndDelete(req.params.id);
+
+  res.status(204).json({
+    status: "success",
+    data: null,
+  });
+});
 
   // 📌 Đếm số user (trừ admin)
 const countNonAdmins = catchAsync(async (req, res, next) => {

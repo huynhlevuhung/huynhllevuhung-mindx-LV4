@@ -1,0 +1,155 @@
+{
+  "users": [
+    {
+      "_id": "66f100000000000000000001",
+      "username": "admin01",
+      "email": "admin@example.com",
+      "password": "$2b$12$hashedpassword",
+      "fullname": "System Admin",
+      "phone": "0909000001",
+      "avatar": "https://dummyimage.com/100x100/000/fff&text=Admin",
+      "role": "admin"
+    },
+    {
+      "_id": "66f100000000000000000002",
+      "username": "seller01",
+      "email": "seller@example.com",
+      "password": "$2b$12$hashedpassword",
+      "fullname": "Main Seller",
+      "phone": "0909000002",
+      "avatar": "https://dummyimage.com/100x100/000/fff&text=Seller",
+      "role": "seller"
+    },
+    {
+      "_id": "66f100000000000000000003",
+      "username": "user01",
+      "email": "user@example.com",
+      "password": "$2b$12$hashedpassword",
+      "fullname": "Normal User",
+      "phone": "0909000003",
+      "avatar": "https://dummyimage.com/100x100/000/fff&text=User",
+      "role": "user"
+    }
+  ],
+  "areas": [
+    { "_id": "66f200000000000000000001", "name": "Hà Nội" },
+    { "_id": "66f200000000000000000002", "name": "TP HCM" }
+  ],
+  "stores": [
+    {
+      "_id": "66f300000000000000000001",
+      "name": "Tech Store",
+      "owner_id": "66f100000000000000000002",
+      "address": "123 Đường A, Hà Nội",
+      "area_id": "66f200000000000000000001",
+      "status": "active"
+    }
+  ],
+  "tags": [
+    { "_id": "66f400000000000000000001", "name": "Electronics" },
+    { "_id": "66f400000000000000000002", "name": "Clothing" }
+  ],
+  "products": [
+    {
+      "_id": "66f500000000000000000001",
+      "store_id": "66f300000000000000000001",
+      "name": "Smartphone X1",
+      "description": "Điện thoại thông minh cấu hình cao",
+      "base_price": 500,
+      "sale_price": 450,
+      "tag_id": "66f400000000000000000001"
+    }
+  ],
+  "colors": [
+    { "_id": "66f600000000000000000001", "name": "Black", "hex_code": "#000000" },
+    { "_id": "66f600000000000000000002", "name": "White", "hex_code": "#FFFFFF" }
+  ],
+  "sizes": [
+    { "_id": "66f700000000000000000001", "name": "M" },
+    { "_id": "66f700000000000000000002", "name": "L" }
+  ],
+  "product_variants": [
+    {
+      "_id": "66f800000000000000000001",
+      "product_id": "66f500000000000000000001",
+      "color_id": "66f600000000000000000001",
+      "size_id": "66f700000000000000000001",
+      "base_price": 500,
+      "sale_price": 450,
+      "quantity": 10
+    }
+  ],
+  "images": [
+    {
+      "_id": "66f900000000000000000001",
+      "product_id": "66f500000000000000000001",
+      "color_id": "66f600000000000000000001",
+      "is_primary": true,
+      "url": "https://dummyimage.com/400x400/000/fff&text=Smartphone"
+    }
+  ],
+  "promotions": [
+    {
+      "_id": "66fa000000000000000001",
+      "store_id": "66f300000000000000000001",
+      "name": "Giảm 10%",
+      "discount_type": "percent",
+      "discount_value": 10,
+      "is_active": true
+    }
+  ],
+  "orders": [
+    {
+      "_id": "66fb000000000000000001",
+      "user_id": "66f100000000000000000003",
+      "total_amount": 500,
+      "final_amount": 450,
+      "status": "pending"
+    }
+  ],
+  "order_items": [
+    {
+      "_id": "66fb100000000000000001",
+      "order_id": "66fb000000000000000001",
+      "variant_id": "66f800000000000000000001",
+      "price": 500,
+      "quantity": 1,
+      "promotion_id": "66fa000000000000000001",
+      "discount_amount": 50
+    }
+  ],
+  "carts": [
+    { "_id": "66fc000000000000000001", "user_id": "66f100000000000000000003" }
+  ],
+  "cart_items": [
+    {
+      "_id": "66fc100000000000000001",
+      "cart_id": "66fc000000000000000001",
+      "variant_id": "66f800000000000000000001",
+      "quantity": 1,
+      "price": 450,
+      "promotion_id": "66fa000000000000000001"
+    }
+  ],
+  "addresses": [
+    {
+      "_id": "66fd000000000000000001",
+      "user_id": "66f100000000000000000003",
+      "street": "Số 1 Trần Phú",
+      "city": "Hà Nội",
+      "district": "Ba Đình",
+      "phone_number": "0909123456",
+      "is_default": true
+    }
+  ],
+  "temp_users": [
+    {
+      "_id": "66fe000000000000000001",
+      "email": "newuser@example.com",
+      "otp": "123456",
+      "type": "signup",
+      "expires_at": "2025-10-01T00:00:00Z",
+      "used": false
+    }
+  ]
+}

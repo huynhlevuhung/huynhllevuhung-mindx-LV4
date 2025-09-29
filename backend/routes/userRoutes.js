@@ -37,7 +37,12 @@ router
 // Chỉ admin mới được CRUD user
 router.use(authController.protect);
 router.use(authController.restrictTo("admin"));
-router.get("/stats/count-non-admins", protect, restrictTo("admin"), userController.countNonAdmins);
+router.get(
+  "/stats/count-non-admins",
+  authController.protect,
+  authController.restrictTo("admin"),
+  userController.countNonAdmins
+);
 
 
 router

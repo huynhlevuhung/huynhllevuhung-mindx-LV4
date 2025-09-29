@@ -54,6 +54,8 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
+    avatar: { type: String, default: "" },
+
     isActive: { type: Boolean, default: true },
 
     otpReset: {

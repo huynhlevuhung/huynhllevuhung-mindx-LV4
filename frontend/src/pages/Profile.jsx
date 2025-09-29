@@ -1,33 +1,13 @@
-import { useEffect, useState } from "react";
-import api from "../utils/api";
+import { useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import useToast from "../hooks/useToast";
+import useAuth from "../hooks/useAuth";
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
+  const { user, updateMe } = useAuth();
   const [preview, setPreview] = useState(null);
   const toast = useToast();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await api.get("/users/me", { withCredentials: true });
-        setUser(res.data.data.user);
-        setPreview(
-          res.data.data.user.avatar
-            ? `http://localhost:3000/img/avatars/${res.data.data.user.avatar}`
-            : "http://localhost:3000/img/avatars/default.png"
-        );
-      } catch (err) {
-        console.error(
-          "JWT không hợp lệ hoặc chưa login:",
-          err.response?.data.message
-        );
-      }
-    };
-    checkAuth();
-  }, []);
 
   const validationSchema = Yup.object({
     fullname: Yup.string().required("Họ và tên không được để trống"),
@@ -35,8 +15,6 @@ export default function Profile() {
       .matches(/^(0|\+84)(\d{9})$/, "Số điện thoại không hợp lệ")
       .required("Số điện thoại không được để trống"),
   });
-
-  if (!user) return null;
 
   const initialValues = {
     username: user?.username || "",
@@ -46,42 +24,39 @@ export default function Profile() {
     avatar: user?.avatar || "default.jpg",
   };
 
-  const handleSubmit = async (values, { setSubmitting }) => {
-    try {
-      const formData = new FormData();
-      formData.append("fullname", values.fullname);
-      formData.append("phone", values.phone);
+  const avatarUrl =
+    preview ||
+    (user?.avatar
+      ? `http://localhost:3000/img/avatars/${user.avatar}`
+      : "http://localhost:3000/img/avatars/default.png");
 
-      // Chỉ append avatar nếu có file mới
-      if (values.avatar instanceof File) {
-        formData.append("avatar", values.avatar);
-      }
+  const handleSubmit = (values) => {
+    const formData = new FormData();
+    formData.append("fullname", values.fullname);
+    formData.append("phone", values.phone);
 
-      const res = await api.patch("/users/me", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true,
-      });
-
-      const updatedUser = res.data.data.user;
-      setUser(updatedUser);
-
-      // Giữ preview nếu chọn file mới, nếu không thì lấy từ DB
-      setPreview(
-        values.avatar instanceof File
-          ? URL.createObjectURL(values.avatar)
-          : updatedUser.avatar
-          ? `http://localhost:3000/img/avatars/${updatedUser.avatar}`
-          : "http://localhost:3000/img/avatars/default.png"
-      );
-
-      toast.success("Thành công", "Thông tin đã được cập nhật");
-    } catch (err) {
-      toast.error("Đã có lỗi xảy ra", "Vui lòng thử lại sau");
-      console.error(err);
-    } finally {
-      setSubmitting(false);
+    if (values.avatar instanceof File) {
+      formData.append("avatar", values.avatar);
     }
+
+    updateMe.mutate(formData, {
+      onSuccess: (updatedUser) => {
+        setPreview(
+          values.avatar instanceof File
+            ? URL.createObjectURL(values.avatar)
+            : updatedUser.avatar
+            ? `http://localhost:3000/img/avatars/${updatedUser.avatar}`
+            : "http://localhost:3000/img/avatars/default.jpg"
+        );
+        toast.success("Thành công", "Thông tin đã được cập nhật");
+      },
+      onError: () => {
+        toast.error("Đã có lỗi xảy ra", "Vui lòng thử lại sau");
+      },
+    });
   };
+
+  if (!user) return null;
 
   return (
     <Formik
@@ -90,7 +65,7 @@ export default function Profile() {
       onSubmit={handleSubmit}
       enableReinitialize
     >
-      {({ isSubmitting, isValid, setFieldValue }) => (
+      {({ isValid, setFieldValue }) => (
         <Form className="grid grid-cols-10 gap-6 h-full ">
           <div className="col-span-6 bg-white rounded-lg shadow p-4">
             <h2 className="text-2xl font-semibold text-blue-600">
@@ -110,7 +85,6 @@ export default function Profile() {
               />
             </div>
 
-            {/* Email */}
             <div className="mt-5">
               <label className="block text-sm font-medium mb-1 text-gray-700">
                 Email
@@ -123,7 +97,6 @@ export default function Profile() {
               />
             </div>
 
-            {/* Fullname */}
             <div className="mt-5">
               <label className="block text-sm font-medium mb-1 text-gray-700">
                 Họ và tên
@@ -158,10 +131,10 @@ export default function Profile() {
             <div className="flex justify-center mt-5">
               <button
                 type="submit"
-                disabled={isSubmitting || !isValid}
+                disabled={updateMe.isPending || !isValid}
                 className="w-6/12 bg-blue-500 text-white py-2.5 rounded-lg font-medium hover:bg-blue-600 disabled:bg-gray-400 transition cursor-pointer"
               >
-                {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
+                {updateMe.isPending ? "Đang lưu..." : "Lưu thay đổi"}
               </button>
             </div>
           </div>
@@ -182,7 +155,7 @@ export default function Profile() {
                 }}
               />
               <img
-                src={preview}
+                src={avatarUrl}
                 alt="avatar"
                 className="w-48 h-48 rounded-full object-cover border mb-3 cursor-pointer hover:opacity-80 transition"
                 onClick={() => document.getElementById("avatarInput").click()}
