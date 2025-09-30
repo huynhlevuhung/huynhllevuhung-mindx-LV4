@@ -1,59 +1,35 @@
 import express from "express";
 import authController from "../controllers/authController.js";
-
 import userController from "../controllers/userController.js";
 import uploadAvatar from "../middlewares/uploadAvatar.js";
-console.log("authController:", authController);
+
 const router = express.Router();
 
-// ================= AUTH =================
-// Signup, verify OTP, login, forgot/reset password
-router.post("/signup", authController.signup);
-router.post("/verify-otp", authController.verifyOtp);
-router.post("/resend-otp", authController.resendOtp);
-router.post("/login", authController.login);
-
-router.post("/forgot-password", authController.forgotPassword);
-router.post("/resend-otp-forgot-password", authController.resendOtpForgotPassword);
-router.post("/verify-forgot-password", authController.verifyForgotPassword);
-router.post(
-  "/reset-password",
-  authController.verifyResetTokenCookie,
-  authController.resetPassword
-);
-
-// ================= USER PROFILE =================
-// Lấy thông tin hiện tại
+// USER PROFILE
 router
   .route("/me")
   .get(authController.protect, userController.getMe)
   .patch(
     authController.protect,
-    uploadAvatar.single("avatar"), // upload avatar
+    uploadAvatar.single("avatar"),
     userController.updateMe
   );
 
-// ================= ADMIN CRUD USERS =================
-// Chỉ admin mới được CRUD user
+// ADMIN CRUD USERS
 router.use(authController.protect);
 router.use(authController.restrictTo("admin"));
-router.get(
-  "/stats/count-non-admins",
-  authController.protect,
-  authController.restrictTo("admin"),
-  userController.countNonAdmins
-);
 
+router.get("/stats/count-non-admins", userController.countNonAdmins);
 
 router
   .route("/")
-  .get(userController.getAllUsers)   // GET all users
-  .post(userController.createUser);  // CREATE user
+  .get(userController.getAllUsers)
+  .post(userController.createUser);
 
 router
   .route("/:id")
-  .get(userController.getUser)       // GET user by ID
-  .patch(userController.updateUser)  // UPDATE user
-  .delete(userController.deleteUser); // DELETE user
+  .get(userController.getUser)
+  .patch(userController.updateUser)
+  .delete(userController.deleteUser);
 
 export default router;

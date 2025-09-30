@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useState, useContext } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../utils/api";
 import useToast from "../hooks/useToast";
 import Cookies from "js-cookie";
@@ -10,6 +9,7 @@ import FadeContent from "../components/FadeContent";
 import SpinnerLoad from "../components/Spinner";
 import { Checkbox } from "@heroui/checkbox";
 import { EyeFilledIcon, EyeSlashFilledIcon } from "../icons/icons";
+import { ShopContext } from "../context/ShopContext";
 
 export default function Login() {
   const [isVisible, setIsVisible] = useState(false);
@@ -18,39 +18,65 @@ export default function Login() {
 
   const navigate = useNavigate();
   const toast = useToast();
+  const { login } = useContext(ShopContext); // ✅ lấy hàm login từ context
 
   const toggleVisibility = () => setIsVisible(!isVisible);
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await api.post("/auth/login", {
-        username: form.username,
-        password: form.password,
-      });
+  const res = await api.post("/auth/login", {
+    identifier: form.username, // đúng field BE yêu cầu
+    password: form.password,
+  });
 
-      const { token, user } = res.data.data;
+  console.log("LOGIN RESPONSE:", res.data);
 
-      // Lưu token + role vào cookie (an toàn hơn localStorage)
-      Cookies.set("token", token, { expires: 7, secure: true, sameSite: "Strict" });
-      Cookies.set("role", user.role, { expires: 7, secure: true, sameSite: "Strict" });
+  const user = res.data.data?.user; // lấy user đúng cấu trúc
+  const token = res.data.token;     // nếu BE trả token thì lấy ở đây, nếu không thì bỏ
 
-      toast.success("Đăng nhập thành công");
+  // Lưu token vào cookie nếu có
+  if (token) {
+    Cookies.set("token", token, {
+      expires: 7,
+      secure: true,
+      sameSite: "Strict",
+    });
+  }
 
-      // Redirect theo role
-      if (user.role === "admin") navigate("/dashboard");
-      else if (user.role === "seller") navigate("/seller");
-      else navigate("/");
+  // Lưu role vào cookie để ProtectedRoute check
+  if (user?.role) {
+    Cookies.set("role", user.role, {
+      expires: 7,
+      secure: true,
+      sameSite: "Strict",
+    });
+  }
 
-    } catch (err) {
-      const msg = err.response?.data?.message || "Có lỗi xảy ra khi đăng nhập";
-      toast.error(msg);
-      console.log("Login error:", err.response?.data || err.message);
-    } finally {
-      setIsLoading(false);
-    }
+  // Lưu vào context
+  login(user);
+
+  toast.success("Đăng nhập thành công");
+
+  // ✅ Điều hướng theo role
+  if (user.role === "admin") {
+    navigate("/admin");
+  } else if (user.role === "seller") {
+    navigate("/seller");
+  } else {
+    navigate("/");
+  }
+} catch (err) {
+  const msg = err.response?.data?.message || "Có lỗi xảy ra khi đăng nhập";
+  toast.error(msg);
+  console.log("Login error:", err.response?.data || err.message);
+} finally {
+  setIsLoading(false);
+}
+
   };
 
   return (
@@ -124,7 +150,7 @@ export default function Login() {
         </p>
         <p className="text-sm text-gray-600 text-center">
           Chưa có tài khoản?{" "}
-          <Link to="/signup" className="text-blue-600 hover:underline">
+          <Link to="/authen/signup" className="text-blue-600 hover:underline">
             Đăng ký
           </Link>
         </p>

@@ -52,7 +52,7 @@ const signup = catchAsync(async (req, res, next) => {
     password,
     passwordConfirm,
     otp,
-    otpExpires: Date.now() + 5 * 60 * 1000, // 5 phút
+    otpExpires: new Date(Date.now() + 5 * 60 * 1000),   // 5 phút
   });
 
   await sendEmail({
@@ -79,11 +79,14 @@ const verifyOtp = catchAsync(async (req, res, next) => {
   if (!tempUser)
     return next(new AppError("OTP không hợp lệ hoặc đã hết hạn", 400));
 
-  const user = await User.create({
+  // ✅ Cách sửa: bỏ qua hash lần 2
+  const user = new User({
     username: tempUser.username,
     email: tempUser.email,
-    password: tempUser.password,
+    password: tempUser.password, // đã hash ở TempUser
   });
+  user.skipHash = true; // 👉 để middleware UserModel không hash lại
+  await user.save();
 
   await TempUser.deleteOne({ _id: tempUser._id });
 
@@ -117,13 +120,16 @@ const resendOtp = catchAsync(async (req, res, next) => {
 
 // ----------------- Login -----------------
 const login = catchAsync(async (req, res, next) => {
-  const { username, password } = req.body;
+  const { identifier, password } = req.body;
 
-  if (!username || !password) {
-    return next(new AppError("Vui lòng nhập email và mật khẩu", 400));
+  if (!identifier || !password) {
+    return next(new AppError("Vui lòng nhập email hoặc tên đăng nhập và mật khẩu", 400));
   }
 
-  const user = await User.findOne({ username }).select("+password");
+  const user = await User.findOne({
+    $or: [{ username: identifier }, { email: identifier }],
+  }).select("+password");
+
   if (!user) {
     return next(new AppError("Tên đăng nhập hoặc mật khẩu không đúng", 401));
   }

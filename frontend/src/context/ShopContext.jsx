@@ -9,23 +9,41 @@ const ShopContextProvider = (props) => {
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
+  const [user, setUser] = useState(null); // ✅ thêm user
   const navigate = useNavigate();
 
   const currency = "$";
   const delivery_fee = 10;
 
+  // Load cart + user từ localStorage khi mở trang
   useEffect(() => {
-    // INFO: Load cart items from localStorage when the component mounts
     const storedCartItems = JSON.parse(localStorage.getItem("cartItems"));
     if (storedCartItems) {
       setCartItems(storedCartItems);
     }
+
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) {
+      setUser(storedUser);
+    }
   }, []);
 
+  // Save cart mỗi khi thay đổi
   useEffect(() => {
-    // INFO: Save cart items to localStorage whenever cartItems changes
     localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
+
+  // ✅ Hàm login/logout
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+  };
 
   const addToCart = async (itemId, size) => {
     if (!size) {
@@ -60,7 +78,7 @@ const ShopContextProvider = (props) => {
             totalCount += cartItems[items][item];
           }
         } catch (error) {
-          // INFO: Error Handling
+          // ignore
         }
       }
     }
@@ -74,9 +92,7 @@ const ShopContextProvider = (props) => {
     }
 
     let cartData = structuredClone(cartItems);
-
     cartData[itemId][size] = quantity;
-
     setCartItems(cartData);
   };
 
@@ -89,7 +105,9 @@ const ShopContextProvider = (props) => {
           if (cartItems[items][item] > 0) {
             totalAmount += itemInfo.price * cartItems[items][item];
           }
-        } catch (error) {}
+        } catch (error) {
+          // ignore
+        }
       }
     }
     return totalAmount;
@@ -109,6 +127,11 @@ const ShopContextProvider = (props) => {
     updateQuantity,
     getCartAmount,
     navigate,
+    // ✅ thêm vào context
+    user,
+    setUser,
+    login,
+    logout,
   };
 
   return (

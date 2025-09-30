@@ -1,119 +1,238 @@
-// src/components/Navbar.jsx
-import React from "react";
-import { BellIcon, ShoppingCartIcon } from "@heroicons/react/24/outline";
-import { Link } from "react-router-dom";
-import LanguageDropDown from "./LanguageDropDown";
-import MeDropDown from "./MeDropDown";
-import useAuth from "../hooks/useAuth";
+import React, { useContext, useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { ShopContext } from "../context/ShopContext";
+import { assets } from "../assets/assets";
 
 const Navbar = () => {
-  const { user } = useAuth();
+  const [visible, setVisible] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
 
-  const languageOptions = [
-    { key: "vi", label: "Tiếng Việt" },
-    { key: "en", label: "English" },
-  ];
+  const { setShowSearch, getCartCount, user, logout } =
+    useContext(ShopContext);
 
-  const meOptions = [
-    { key: "me", label: "Tài khoản của tôi" },
-    { key: "order", label: "Đơn hàng" },
-    { key: "logout", label: "Đăng xuất" },
-  ];
+  const navigate = useNavigate();
+
+  const handleCartClick = () => {
+    if (!user) {
+      navigate("/authen/login");
+    } else {
+      navigate("/cart");
+    }
+  };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 w-full bg-gradient-to-r from-green-400 via-blue-500 to-indigo-600 shadow-md">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16 text-white">
-          {/* Logo + Menu chính */}
-          <div className="flex items-center gap-8">
-            <div className="text-2xl font-bold tracking-wide flex items-center gap-2">
-              <img src="/assets/logo.png" className="w-12 h-12" alt="Logo" />
-              <p>TMDT</p>
-            </div>
+    <div className="flex items-center justify-between px-6 py-4 bg-white shadow-md font-medium relative">
+      {/* Logo */}
+      <Link to="/">
+        <img
+          src={assets.logo}
+          className="w-36" // giữ kích thước logo file 2
+          alt="Trendify"
+        />
+      </Link>
 
-            <div className="hidden md:flex gap-2 font-medium text-lg">
-              <Link
-                to="/"
-                className="px-3 py-2 rounded-lg hover:bg-white/20 transition"
-              >
-                Trang Chủ
-              </Link>
-              <Link
-                to="/products"
-                className="px-3 py-2 rounded-lg hover:bg-white/20 transition"
-              >
-                Sản Phẩm
-              </Link>
-              <Link
-                to="/about"
-                className="px-3 py-2 rounded-lg hover:bg-white/20 transition"
-              >
-                Giới Thiệu
-              </Link>
-              <Link
-                to="/contact"
-                className="px-3 py-2 rounded-lg hover:bg-white/20 transition"
-              >
-                Liên Hệ
-              </Link>
-            </div>
-          </div>
+      {/* Menu */}
+      <ul className="hidden gap-6 text-sm text-gray-700 sm:flex">
+        <NavLink to="/" className="flex flex-col items-center gap-1">
+          <p>HOME</p>
+          <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
+        </NavLink>
+        <NavLink to="/collection" className="flex flex-col items-center gap-1">
+          <p>COLLECTION</p>
+          <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
+        </NavLink>
+        <NavLink to="/about" className="flex flex-col items-center gap-1">
+          <p>ABOUT</p>
+          <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
+        </NavLink>
+        <NavLink to="/contact" className="flex flex-col items-center gap-1">
+          <p>CONTACT</p>
+          <hr className="w-2/4 border-none h-[1.5px] bg-gray-700 hidden" />
+        </NavLink>
+      </ul>
 
-          {/* Thanh tìm kiếm */}
-          <div className="flex-1 mx-6 hidden md:block">
-            <input
-              type="text"
-              placeholder="Tìm kiếm sản phẩm..."
-              className="w-full px-4 py-2 rounded-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-300"
-            />
-          </div>
+      {/* Right Icons */}
+      <div className="flex items-center gap-6 relative">
+        {/* Search */}
+       <div
+  className="flex items-center gap-2 relative"
+  onMouseEnter={() => setSearchOpen(true)}
+  onMouseLeave={() => setSearchOpen(false)}
+>
+  {/* Input */}
+  <input
+    type="text"
+    placeholder="Tìm kiếm sản phẩm..."
+    className={`h-8 px-3 rounded-full border outline-none text-sm transition-all duration-300
+      ${searchOpen ? "w-48 opacity-100" : "w-0 opacity-0"} `}
+    onFocus={() => setShowSearch(true)}
+    onBlur={() => setShowSearch(false)}
+  />
 
-          {/* Phần icon bên phải */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-white/20 transition cursor-pointer">
-              <div className="relative flex items-center justify-center w-8 h-8">
-                <BellIcon className="w-6 h-6 text-white" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
-                  3
-                </span>
+  {/* Icon search */}
+  <img
+    src={assets.search_icon}
+    className="w-5 cursor-pointer transition-all duration-300"
+    alt="Search Products"
+  />
+</div>
+
+        {/* User / Profile */}
+        <div className="relative group">
+          {!user ? (
+            <>
+              <img
+                src={assets.profile_icon}
+                className="w-5 cursor-pointer"
+                alt="Login"
+              />
+              <div className="absolute right-0 hidden pt-4 group-hover:block dropdown-menu">
+                <div className="flex flex-col gap-2 px-5 py-3 text-gray-500 rounded w-36 bg-slate-100">
+                  <Link
+                    to="/authen/login"
+                    className="cursor-pointer hover:text-black"
+                  >
+                    Đăng Nhập
+                  </Link>
+                  <Link
+                    to="/authen/signup"
+                    className="cursor-pointer hover:text-black"
+                  >
+                    Đăng Ký
+                  </Link>
+                </div>
               </div>
-              <span className="text-white font-medium">Thông báo</span>
-            </div>
-
-            <LanguageDropDown options={languageOptions} defaultValue="vi" />
-
-            {/* Menu user */}
-            {user ? (
-              <MeDropDown options={meOptions} />
-            ) : (
-              <Link
-                to="/authen/login"
-                className="px-3 py-2 rounded-lg hover:bg-white/20 transition"
-              >
-                Đăng nhập
-              </Link>
-            )}
-
-            {/* Giỏ hàng */}
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/20 transition cursor-pointer">
-              <ShoppingCartIcon className="w-6 h-6 text-white" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
-                5
-              </span>
-            </div>
-          </div>
+            </>
+          ) : (
+            <>
+              <img
+                src={
+                  user.avatar ||
+                  "https://cdn-icons-png.flaticon.com/512/3106/3106773.png"
+                }
+                className="w-8 h-8 rounded-full object-cover cursor-pointer"
+                alt="User Avatar"
+              />
+              <div className="absolute right-0 hidden pt-4 group-hover:block dropdown-menu">
+                <div className="flex flex-col gap-2 px-5 py-3 text-gray-500 rounded w-36 bg-slate-100">
+                  <Link
+                    to="/profile"
+                    className="cursor-pointer hover:text-black"
+                  >
+                    Thông tin
+                  </Link>
+                  <p
+                    onClick={logout}
+                    className="cursor-pointer hover:text-black"
+                  >
+                    Đăng Xuất
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Thanh tìm kiếm cho màn hình nhỏ */}
-        <div className="block md:hidden py-2">
-          <input
-            type="text"
-            placeholder="Tìm kiếm sản phẩm..."
-            className="w-full px-4 py-2 rounded-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+        {/* Cart */}
+        <div onClick={handleCartClick} className="relative cursor-pointer">
+          <img
+            src={assets.cart_icon}
+            className="w-5 min-w-5"
+            alt="Cart"
           />
+          <p className="absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]">
+            {getCartCount()}
+          </p>
+        </div>
+
+        {/* Language */}
+        <div
+          className="relative"
+          onMouseEnter={() => setLangOpen(true)}
+          onMouseLeave={() => setLangOpen(false)}
+        >
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/44/44386.png"
+            alt="Language"
+            className="w-5 cursor-pointer"
+          />
+          {langOpen && (
+            <div className="absolute right-0 mt-2 bg-white border rounded shadow-md p-2 flex flex-col gap-2 w-20 text-center">
+              <button
+                className="hover:opacity-80"
+                onClick={() => console.log("Set VN")}
+              >
+                🇻🇳
+              </button>
+              <button
+                className="hover:opacity-80"
+                onClick={() => console.log("Set EN")}
+              >
+                🇺🇸
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Menu */}
+        <img
+          onClick={() => setVisible(true)}
+          src={assets.menu_icon}
+          className="w-5 cursor-pointer sm:hidden"
+          alt="Menu Icon"
+        />
+      </div>
+
+      {/* Sidebar menu for smaller screens */}
+      <div
+        className={`absolute top-0 right-0 bottom-0 overflow-hidden bg-white transition-all ${
+          visible ? "w-full" : "w-0"
+        }`}
+      >
+        <div className="flex flex-col text-gray-600">
+          <div
+            onClick={() => setVisible(false)}
+            className="flex items-center gap-4 p-3 cursor-pointer"
+          >
+            <img
+              src={assets.dropdown_icon}
+              className="h-4 rotate-180"
+              alt="Dropdown"
+            />
+            <p>Back</p>
+          </div>
+          <NavLink
+            onClick={() => setVisible(false)}
+            className="py-2 pl-6 border"
+            to="/"
+          >
+            HOME
+          </NavLink>
+          <NavLink
+            onClick={() => setVisible(false)}
+            className="py-2 pl-6 border"
+            to="/collection"
+          >
+            COLLECTION
+          </NavLink>
+          <NavLink
+            onClick={() => setVisible(false)}
+            className="py-2 pl-6 border"
+            to="/about"
+          >
+            ABOUT
+          </NavLink>
+          <NavLink
+            onClick={() => setVisible(false)}
+            className="py-2 pl-6 border"
+            to="/contact"
+          >
+            CONTACT
+          </NavLink>
         </div>
       </div>
-    </nav>
+    </div>
   );
 };
 

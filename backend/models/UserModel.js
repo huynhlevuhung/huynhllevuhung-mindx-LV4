@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import validator from "validator";
 import bcrypt from "bcrypt";
 
-
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -36,7 +35,9 @@ const userSchema = new mongoose.Schema(
 
     phone: { type: String },
 
-    avatar: { type: String },
+    avatar: { type: String, default: "" }, // link Cloudinary
+
+    avatarId: { type: String }, // 🆕 public_id Cloudinary (để xoá ảnh sau này)
 
     address: [{ type: String }],
 
@@ -53,8 +54,6 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "seller", "shipper", "admin", "route manager"],
       default: "user",
     },
-
-    avatar: { type: String, default: "" },
 
     isActive: { type: Boolean, default: true },
 

@@ -1,3 +1,4 @@
+// models/TempUserModel.js
 import mongoose from "mongoose";
 import validator from "validator";
 import bcrypt from "bcrypt";
@@ -7,11 +8,13 @@ const tempUserSchema = new mongoose.Schema(
     username: {
       type: String,
       required: [true, "Tên đăng nhập không được trống"],
+      unique: true,
       trim: true,
     },
     email: {
       type: String,
       required: [true, "Email không được trống"],
+      unique: true,
       lowercase: true,
       validate: [validator.isEmail, "Sai định dạng Email"],
     },
@@ -31,11 +34,31 @@ const tempUserSchema = new mongoose.Schema(
       select: false,
       validate: {
         validator: function (el) {
-          return el === this.password;
+          return this.isNew ? el === this.password : true;
         },
         message: "Mật khẩu xác nhận không khớp",
       },
     },
+
+    // ✅ Đồng bộ thêm các field từ UserModel
+    fullname: { type: String },
+    phone: { type: String },
+    avatar: { type: String, default: "" },
+    address: [{ type: String }],
+    balance: { type: Number, default: 0 },
+    rank: {
+      type: String,
+      enum: ["bronze", "silver", "gold", "platinum"],
+      default: "bronze",
+    },
+    role: {
+      type: String,
+      enum: ["user", "seller", "shipper", "admin", "route manager"],
+      default: "user",
+    },
+    isActive: { type: Boolean, default: true },
+
+    // ✅ OTP cho xác thực
     otp: { type: String, required: true },
     otpExpires: {
       type: Date,
@@ -46,9 +69,9 @@ const tempUserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password trước khi lưu
+// 📌 Middleware hash password trước khi save
 tempUserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password") || this.skipHash) return next();
   this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined; // không lưu confirm
   next();
